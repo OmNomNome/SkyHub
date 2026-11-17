@@ -1,0 +1,171 @@
+// Схема базы данных SkyHub (Prisma 5.22 + SQLite).
+// SQLite в Prisma не поддерживает enum, поэтому статусы, роли и классы
+// хранятся строками. Допустимые значения проверяются на backend (src/services.js).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Самолёт. Салон 3+3 (места A..F), первые businessRows рядов — бизнес-класс.
+model Aircraft {
+  id           Int    @id @default(autoincrement())
+  model        String // "Boeing 737" | "Airbus A320"
+  tailNumber   String @unique // бортовой номер, например RA-73001
+  status       String @default("READY") // READY | IN_FLIGHT | MAINTENANCE
+  businessRows Int    @default(3)
+  economyRows  Int    @default(25)
+
+  flights   Flight[]
+  schedules RegularSchedule[]
+}
+
+// Аэропорт (загружается из backend/data/airports.csv).
+model Airport {
+  id        Int    @id @default(autoincrement())
+  code      String @unique // код IATA
+  name      String
+  city      String
+  latitude  Float
+  longitude Float
+  timezone  String
+  size      String // large | medium | small
+
+  terminals          Terminal[]
+  departures         Flight[]          @relation("DepartureAirport")
+  arrivals           Flight[]          @relation("ArrivalAirport")
+  scheduleDepartures RegularSchedule[] @relation("ScheduleDepartureAirport")
+  scheduleArrivals   RegularSchedule[] @relation("ScheduleArrivalAirport")
+}
+
+// Терминал аэропорта (загружается из backend/data/terminals.csv).
+model Terminal {
+  id        Int    @id @default(autoincrement())
+  airportId Int
+  name      String
+  purpose   String
+  flights   String // all | domestic | international
+
+  airport Airport @relation(fields: [airportId], references: [id], onDelete: Cascade)
+
+  @@index([airportId])
+}
+
+// Сотрудник: диспетчер, стойка, багаж, админ или член экипажа.
+model User {
+  id       Int     @id @default(autoincrement())
+  fullName String
+  role     String // DISPATCHER | CHECKIN | BAGGAGE | ADMIN | PILOT | COPILOT | STEWARD
+  phone    String?
+  email    String?
+
+  crewAssignments FlightCrew[]
+}
+
+// Шаблон регулярного рейса. При создании разворачивается в конкретные Flight.
+model RegularSchedule {
+  id                 Int      @id @default(autoincrement())
+  flightNumber       String
+  aircraftId         Int
+  departureAirportId Int
+  arrivalAirportId   Int
+  daysOfWeek         String // "1,3,5" — 1=Пн ... 7=Вс
+  departureTime      String // "HH:mm"
+  durationMinutes    Int
+  validFrom          DateTime
+  validTo            DateTime
+
+  aircraft         Aircraft @relation(fields: [aircraftId], references: [id])
+  departureAirport Airport  @relation("ScheduleDepartureAirport", fields: [departureAirportId], references: [id])
+  arrivalAirport   Airport  @relation("ScheduleArrivalAirport", fields: [arrivalAirportId], references: [id])
+  flights          Flight[]
+}
+
+// Конкретный рейс в конкретную дату.
+model Flight {
+  id                 Int      @id @default(autoincrement())
+  flightNumber       String
+  aircraftId         Int
+  departureAirportId Int
+  arrivalAirportId   Int
+  departureTerminal  String?
+  arrivalTerminal    String?
+  departureTime      DateTime
+  arrivalTime        DateTime
+  status             String   @default("SCHEDULED") // SCHEDULED | CHECKIN_OPEN | DEPARTED | ARRIVED | CANCELLED
+  isRegular          Boolean  @default(false)
+  regularScheduleId  Int?
+
+  aircraft         Aircraft         @relation(fields: [aircraftId], references: [id])
+  departureAirport Airport          @relation("DepartureAirport", fields: [departureAirportId], references: [id])
+  arrivalAirport   Airport          @relation("ArrivalAirport", fields: [arrivalAirportId], references: [id])
+  regularSchedule  RegularSchedule? @relation(fields: [regularScheduleId], references: [id], onDelete: SetNull)
+  crew             FlightCrew[]
+  tickets          Ticket[]
+
+  @@index([aircraftId, departureTime])
+  @@index([departureTime])
+}
+
+// Назначение сотрудника на рейс. На рейс: 1 PILOT + 1 COPILOT + 6 STEWARD.
+model FlightCrew {
+  id           Int    @id @default(autoincrement())
+  flightId     Int
+  userId       Int
+  roleOnFlight String // PILOT | COPILOT | STEWARD
+
+  flight Flight @relation(fields: [flightId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@unique([flightId, userId])
+  @@index([userId])
+}
+
+model Passenger {
+  id       Int     @id @default(autoincrement())
+  fullName String
+  passport String  @unique
+  phone    String?
+  email    String?
+
+  tickets Ticket[]
+}
+
+// Билет. Место (seatNumber) появляется только при регистрации,
+// у билета в статусе BOOKED оно равно null.
+model Ticket {
+  id           Int     @id @default(autoincrement())
+  ticketNumber String  @unique // TK100001...
+  passengerId  Int
+  flightId     Int
+  seatNumber   String? // "12C"; null, пока пассажир не зарегистрирован
+  class        String // BUSINESS | ECONOMY — купленный класс
+  status       String  @default("BOOKED") // BOOKED | CHECKED_IN | CANCELLED
+
+  passenger Passenger @relation(fields: [passengerId], references: [id])
+  flight    Flight    @relation(fields: [flightId], references: [id], onDelete: Cascade)
+  baggage   Baggage[]
+
+  // Одно место на рейсе — один билет. NULL в SQLite не считается дублем,
+  // поэтому много билетов без места не нарушают это ограничение.
+  @@unique([flightId, seatNumber])
+  @@index([passengerId])
+}
+
+model Baggage {
+  id         Int    @id @default(autoincrement())
+  ticketId   Int
+  tagNumber  String @unique // BAG-YYYY-NNNNNN, генерируется на backend
+  weight     Float
+  dimensions String // "55x40x20"
+  type       String // CARRY_ON | CHECKED
+  status     String @default("ACCEPTED") // ACCEPTED | LOADED | DELIVERED | LOST
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
+}
