@@ -1,0 +1,26 @@
+# Зависимости — ставятся через npm install
+node_modules/
+
+# База данных SQLite — создаётся заново через prisma db push + seed
+database/
+*.db
+*.db-journal
+
+# Секреты и локальные настройки
+.env
+backend/.env
+
+# Сборка фронтенда
+frontend/dist/
+backend/public/
+
+# Архив для сдачи
+SkyHub.zip
+
+# Логи и мусор
+npm-debug.log*
+*.log
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

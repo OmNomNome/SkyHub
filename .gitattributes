@@ -1,0 +1,5 @@
+# Все текстовые файлы храним с LF (нужно для Docker/Linux)
+* text=auto eol=lf
+# .bat-файлам cmd.exe нужен CRLF, иначе возможны сбои в метках и goto
+*.bat text eol=crlf
+*.cmd text eol=crlf
