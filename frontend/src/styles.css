@@ -1,0 +1,52 @@
+html, body, #root { height: 100%; margin: 0; }
+body { background: #f3f5f9; }
+
+.app-header {
+  display: flex; align-items: center; gap: 16px;
+  background: #0f2a5c !important; padding: 0 24px !important;
+}
+.app-logo { color: #fff; font-size: 20px; font-weight: 700; letter-spacing: .3px; white-space: nowrap; }
+.app-logo small { font-weight: 400; opacity: .7; font-size: 13px; margin-left: 8px; }
+.app-content { padding: 16px 24px; }
+
+/* ---------- Диаграмма Ганта ---------- */
+.gantt-wrap { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; }
+.gantt-scroll { overflow-x: auto; }
+.gantt-item {
+  overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  color: #fff; padding: 0 4px; font-size: 12px; line-height: inherit; height: 100%;
+}
+.gantt-item.week { font-size: 10px; padding: 0 2px; }
+.react-calendar-timeline .rct-sidebar .rct-sidebar-row { font-size: 12px; padding: 0 8px; }
+.react-calendar-timeline .rct-header-root { background: #0f2a5c; }
+
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: #4b5563; }
+.legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 5px; vertical-align: -2px; }
+
+/* ---------- Карта ---------- */
+.map-box { height: 620px; border-radius: 8px; overflow: hidden; border: 1px solid #e5e7eb; }
+.plane-icon { font-size: 22px; line-height: 22px; color: #ea580c; text-shadow: 0 0 3px #fff, 0 0 3px #fff; }
+
+/* ---------- Схема салона ---------- */
+.seatmap { display: inline-block; padding: 12px 16px; background: #fff; border: 1px solid #e5e7eb; border-radius: 24px 24px 8px 8px; }
+.seat-row { display: flex; align-items: center; gap: 4px; margin-bottom: 4px; }
+.seat-row-num { width: 22px; text-align: center; font-size: 11px; color: #6b7280; }
+.seat-aisle { width: 18px; }
+.seat {
+  width: 30px; height: 28px; border-radius: 6px 6px 3px 3px; border: 1px solid transparent;
+  font-size: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer;
+  user-select: none; transition: transform .05s;
+}
+.seat:hover:not(.disabled) { transform: scale(1.08); }
+.seat.business { background: #fde68a; border-color: #d97706; color: #78350f; }
+.seat.economy { background: #bfdbfe; border-color: #3b82f6; color: #1e3a8a; }
+.seat.disabled { cursor: not-allowed; opacity: .35; }
+.seat.occupied { background: #6b7280; border-color: #4b5563; color: #fff; opacity: .55; }
+.seat.current { outline: 2px dashed #16a34a; outline-offset: 1px; }
+.seat.selected { background: #22c55e; border-color: #15803d; color: #fff; opacity: 1; }
+.seat-zone-title { font-size: 11px; color: #6b7280; margin: 6px 0 4px 26px; }
+
+/* ---------- Бирка ---------- */
+.bag-tag { text-align: center; padding: 16px; border: 2px dashed #0f2a5c; border-radius: 8px; }
+.bag-tag-number { font-size: 40px; font-weight: 800; letter-spacing: 2px; font-family: Consolas, monospace; }
+.bag-tag-route { font-size: 28px; font-weight: 700; margin: 8px 0; }
